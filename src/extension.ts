@@ -3,10 +3,10 @@ import * as WebSocket from 'ws'
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode'
 
-// import { Memento } from 'vscode'
+import { TextEncoder } from 'util'
+import { Uri } from 'vscode'
 
-/* import { TextEncoder } from 'util'
-import { Uri } from 'vscode' */
+// import { Memento } from 'vscode'
 
 /*export class LocalStorageService {
   constructor (private storage: Memento) {}
@@ -30,11 +30,42 @@ const remove = function (id: number) {
 }
 
 function startWebsocket () {
-  ws = new WebSocket('ws://localhost:8080')
+  ws = new WebSocket('ws://localhost:8080', {
+    /* headers: {
+      token: ''
+    } */
+  })
 
-  ws.on('message', function incoming (message) {
-    console.log('received: %s', message)
-    vscode.window.showInformationMessage(message.toString())
+  vscode.window.showInformationMessage('connected')
+
+  ws.on('message', async function incoming (message) {
+    vscode.window.showInformationMessage('Fetch completed')
+
+    const uri =
+      vscode.window.activeTextEditor?.document.uri ||
+      vscode.workspace.workspaceFolders?.find(function (_, index) {
+        return index === 0
+      })?.uri ||
+      Uri.from({
+        scheme: 'file',
+        path: await vscode.window.showInputBox({
+          prompt: 'Where to save',
+          title: 'Path to save',
+          value: '/'
+        })
+      })
+
+    const encoder = new TextEncoder()
+    const content = encoder.encode(message.toString())
+
+    const newUri = Uri.joinPath(uri, '../new-file.js')
+    vscode.workspace.fs.writeFile(newUri, content)
+
+    console.log('newUri', newUri)
+
+    const document = await vscode.workspace.openTextDocument(newUri)
+    vscode.window.showTextDocument(document)
+
     remove(parseInt(message.toString()))
 
     if (queue.length === 0 && typeof ws !== 'undefined') {
@@ -63,40 +94,6 @@ export function activate (context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand(
     'wingman.helloWorld',
     async () => {
-      /*
-      const uri =
-        vscode.window.activeTextEditor?.document.uri ||
-        vscode.workspace.workspaceFolders?.find(function (
-          workspaceFolder,
-          index
-        ) {
-          return index === 0
-        })?.uri ||
-        Uri.from({
-          scheme: 'file',
-          path: await vscode.window.showInputBox({
-            prompt: 'Where to save',
-            title: 'Path to save',
-            value: '/'
-          })
-        })
-
-      vscode.window.showInformationMessage('Start fetch')
-
-      vscode.window.showInformationMessage('Fetch completed')
-
-      const encoder = new TextEncoder()
-      const content = encoder.encode(data)
-
-      const newUri = Uri.joinPath(uri, '../new-file.js')
-      vscode.workspace.fs.writeFile(newUri, content)
-
-      console.log('newUri', newUri)
-
-      const document = await vscode.workspace.openTextDocument(newUri)
-      vscode.window.showTextDocument(document)
-      */
-
       if (typeof ws === 'undefined') {
         startWebsocket()
       }
@@ -104,13 +101,18 @@ export function activate (context: vscode.ExtensionContext) {
       const id = Date.now()
       queue.push(id)
 
+      const input = await vscode.window.showInputBox({
+        prompt: 'Create react component with Material UI that has',
+        title: 'Create react component with Material UI that has',
+        value: 'a dialog with form for first name, last name and submit button'
+      })
+
+      vscode.window.showInformationMessage(`Input was: ${input}`)
+
       if (typeof ws !== 'undefined') {
-        ws.on('open', function open () {
-          vscode.window.showInformationMessage('connected')
-          if (typeof ws !== 'undefined') {
-            ws.send(id)
-          }
-        })
+        vscode.window.showInformationMessage('websocket IS defined')
+        vscode.window.showInformationMessage('Start fetch')
+        ws.send(input)
       }
     }
   )
