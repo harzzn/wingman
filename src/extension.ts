@@ -5,6 +5,7 @@ import * as vscode from 'vscode'
 
 import { TextEncoder } from 'util'
 import { Uri } from 'vscode'
+import { getUri } from './get-uri'
 
 // import { Memento } from 'vscode'
 
@@ -41,30 +42,14 @@ function startWebsocket () {
   ws.on('message', async function incoming (message) {
     vscode.window.showInformationMessage('Websocket message received')
 
-    const uri =
-      vscode.window.activeTextEditor?.document.uri ||
-      vscode.workspace.workspaceFolders?.find(function (_, index) {
-        return index === 0
-      })?.uri ||
-      Uri.from({
-        scheme: 'file',
-        path: await vscode.window.showInputBox({
-          prompt: 'Where to save',
-          title: 'Path to save',
-          value: '/'
-        })
-      })
-
     const encoder = new TextEncoder()
     const { functionName, output } = JSON.parse(message.toString())
     const content = encoder.encode(output)
 
-    const newUri = Uri.joinPath(uri, `../${functionName}.js`)
-    vscode.workspace.fs.writeFile(newUri, content)
+    const uri = await getUri(functionName)
+    await vscode.workspace.fs.writeFile(uri, content)
 
-    console.log('newUri', newUri)
-
-    const document = await vscode.workspace.openTextDocument(newUri)
+    const document = await vscode.workspace.openTextDocument(uri)
     vscode.window.showTextDocument(document)
 
     remove(parseInt(message.toString()))
