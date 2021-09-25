@@ -36,10 +36,10 @@ function startWebsocket () {
     } */
   })
 
-  vscode.window.showInformationMessage('connected')
+  vscode.window.showInformationMessage('Websocket connection established')
 
   ws.on('message', async function incoming (message) {
-    vscode.window.showInformationMessage('Fetch completed')
+    vscode.window.showInformationMessage('Websocket message received')
 
     const uri =
       vscode.window.activeTextEditor?.document.uri ||
@@ -56,9 +56,10 @@ function startWebsocket () {
       })
 
     const encoder = new TextEncoder()
-    const content = encoder.encode(message.toString())
+    const { functionName, output } = JSON.parse(message.toString())
+    const content = encoder.encode(output)
 
-    const newUri = Uri.joinPath(uri, '../new-file.js')
+    const newUri = Uri.joinPath(uri, `../${functionName}.js`)
     vscode.workspace.fs.writeFile(newUri, content)
 
     console.log('newUri', newUri)
@@ -75,7 +76,7 @@ function startWebsocket () {
 
   ws.on('close', function close () {
     ws = undefined
-    vscode.window.showInformationMessage('disconnected')
+    vscode.window.showInformationMessage('Websocket connection disconnected')
   })
 }
 
@@ -107,11 +108,8 @@ export function activate (context: vscode.ExtensionContext) {
         value: 'a dialog with form for first name, last name and submit button'
       })
 
-      vscode.window.showInformationMessage(`Input was: ${input}`)
-
       if (typeof ws !== 'undefined') {
-        vscode.window.showInformationMessage('websocket IS defined')
-        vscode.window.showInformationMessage('Start fetch')
+        vscode.window.showInformationMessage('Loading...')
         ws.send(input)
       }
     }
