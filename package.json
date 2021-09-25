@@ -7,13 +7,16 @@
     "vscode": "^1.59.0"
   },
   "categories": ["Other"],
-  "activationEvents": ["onCommand:wingman.helloWorld"],
+  "activationEvents": [
+    "onCommand:wingman.generators.javascript.standard-prettier.react.material-ui.component"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "wingman.helloWorld",
-        "title": "Hello World"
+        "command": "wingman.generators.javascript.standard-prettier.react.material-ui.component",
+        "title": "component",
+        "category": "wingman.javascript.standard-prettier.react.material-ui"
       }
     ]
   },

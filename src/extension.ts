@@ -100,7 +100,7 @@ function startWebsocket () {
 export function activate (context: vscode.ExtensionContext) {
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "wingman" is now active!')
+  console.log('Wingman is now active!')
 
   //const storageManager = new LocalStorageService(context.globalState)
 
@@ -108,15 +108,15 @@ export function activate (context: vscode.ExtensionContext) {
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
   let disposable = vscode.commands.registerCommand(
-    'wingman.helloWorld',
+    'wingman.generators.javascript.standard-prettier.react.material-ui.component',
     async () => {
       if (typeof ws === 'undefined') {
         startWebsocket()
       }
 
       const input = await vscode.window.showInputBox({
-        prompt: 'Create react component with Material UI that has',
-        title: 'Create react component with Material UI that has',
+        prompt: 'Create react component with Material UI that has...',
+        title: 'Create react component with Material UI that has...',
         value: 'a dialog with form for first name, last name and submit button'
       })
 
