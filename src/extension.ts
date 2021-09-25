@@ -4,8 +4,8 @@ import * as WebSocket from 'ws'
 import * as vscode from 'vscode'
 
 import { TextEncoder } from 'util'
-import { Uri } from 'vscode'
 import { getUri } from './get-uri'
+import { nanoid } from 'nanoid'
 
 // import { Memento } from 'vscode'
 
@@ -22,12 +22,34 @@ import { getUri } from './get-uri'
 } */
 
 let ws: WebSocket | undefined = undefined
-let queue: number[] = []
+let queue: { key: string; timeout: NodeJS.Timeout }[] = []
 
-const remove = function (id: number) {
-  queue = queue.filter(function (value) {
-    return value !== id
+const remove = function (key: string) {
+  const object = queue.find(function (value) {
+    return value.key === key
   })
+
+  if (typeof object?.timeout !== 'undefined') {
+    clearInterval(object.timeout)
+  }
+
+  queue = queue.filter(function (value) {
+    return value.key !== key
+  })
+}
+
+const showLoading = function (startTime: Date) {
+  let loadingMessage = 'Loading component...'
+
+  const endTime = new Date()
+  const difference = (endTime.getTime() - startTime.getTime()) / 1000
+  const seconds = Math.round(difference)
+
+  if (seconds > 0) {
+    loadingMessage += ` ${seconds}s...`
+  }
+
+  vscode.window.showInformationMessage(loadingMessage)
 }
 
 function startWebsocket () {
@@ -37,13 +59,17 @@ function startWebsocket () {
     } */
   })
 
-  vscode.window.showInformationMessage('Websocket connection established')
+  ws.on('connection', function connection () {
+    console.log('Websocket connection established')
+  })
 
   ws.on('message', async function incoming (message) {
-    vscode.window.showInformationMessage('Websocket message received')
+    const { key, functionName, output } = JSON.parse(message.toString())
+    vscode.window.showInformationMessage(
+      `Creating the file for ${functionName} component...`
+    )
 
     const encoder = new TextEncoder()
-    const { functionName, output } = JSON.parse(message.toString())
     const content = encoder.encode(output)
 
     const uri = await getUri(functionName)
@@ -52,7 +78,11 @@ function startWebsocket () {
     const document = await vscode.workspace.openTextDocument(uri)
     vscode.window.showTextDocument(document)
 
-    remove(parseInt(message.toString()))
+    vscode.window.showInformationMessage(
+      `File created for ${functionName} component!`
+    )
+
+    remove(key)
 
     if (queue.length === 0 && typeof ws !== 'undefined') {
       ws.close()
@@ -61,7 +91,7 @@ function startWebsocket () {
 
   ws.on('close', function close () {
     ws = undefined
-    vscode.window.showInformationMessage('Websocket connection disconnected')
+    console.log('Websocket connection disconnected')
   })
 }
 
@@ -84,9 +114,6 @@ export function activate (context: vscode.ExtensionContext) {
         startWebsocket()
       }
 
-      const id = Date.now()
-      queue.push(id)
-
       const input = await vscode.window.showInputBox({
         prompt: 'Create react component with Material UI that has',
         title: 'Create react component with Material UI that has',
@@ -94,8 +121,12 @@ export function activate (context: vscode.ExtensionContext) {
       })
 
       if (typeof ws !== 'undefined') {
-        vscode.window.showInformationMessage('Loading...')
-        ws.send(input)
+        const key = nanoid()
+        const startTime = new Date()
+        const timeout = setInterval(showLoading, 3000, startTime)
+        showLoading(startTime)
+        queue.push({ key, timeout })
+        ws.send(JSON.stringify({ key, input }))
       }
     }
   )
