@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import { TextEncoder } from 'util'
 import { getUri } from './get-uri'
 import { nanoid } from 'nanoid'
+import validator from 'validator'
 
 // import { Memento } from 'vscode'
 
@@ -114,19 +115,28 @@ export function activate (context: vscode.ExtensionContext) {
         startWebsocket()
       }
 
-      const input = await vscode.window.showInputBox({
+      const userInput = await vscode.window.showInputBox({
         prompt: 'Create react component with Material UI that has...',
         title: 'Create react component with Material UI that has...',
         value: 'a dialog with form for first name, last name and submit button'
       })
 
-      if (typeof ws !== 'undefined') {
-        const key = nanoid()
-        const startTime = new Date()
-        const timeout = setInterval(showLoading, 3000, startTime)
-        showLoading(startTime)
-        queue.push({ key, timeout })
-        ws.send(JSON.stringify({ key, input }))
+      if (typeof userInput !== 'undefined') {
+        const input = validator.whitelist(
+          userInput,
+          `^[a-zA-Z0-9"!?,.'´;:#£$%^&*()-_=+/<> ]*$`
+        )
+
+        vscode.window.showInformationMessage(input)
+
+        if (typeof ws !== 'undefined') {
+          const key = nanoid()
+          const startTime = new Date()
+          const timeout = setInterval(showLoading, 3000, startTime)
+          showLoading(startTime)
+          queue.push({ key, timeout })
+          ws.send(JSON.stringify({ key, input }))
+        }
       }
     }
   )
