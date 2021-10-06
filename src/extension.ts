@@ -54,7 +54,7 @@ const showLoading = function (startTime: Date) {
 }
 
 function startWebsocket () {
-  ws = new WebSocket('ws://localhost:8080', {
+  ws = new WebSocket('ws://localhost:8100', {
     /* headers: {
       token: ''
     } */
@@ -114,6 +114,14 @@ export function activate (context: vscode.ExtensionContext) {
       if (typeof ws === 'undefined') {
         startWebsocket()
       }
+
+      const session = await vscode.authentication.getSession(
+        'github',
+        ['user:email'],
+        { createIfNone: true }
+      )
+
+      vscode.window.showInformationMessage(session?.accessToken || 'no session')
 
       const userInput = await vscode.window.showInputBox({
         prompt: 'Create react component with Material UI that has...',
